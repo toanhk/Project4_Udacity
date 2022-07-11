@@ -8,7 +8,6 @@ plugins:
   - serverless-iam-roles-per-function
   - serverless-plugin-tracing
   - serverless-reqvalidator-plugin
-  - serverless-aws-documentation
 
 provider:
   name: aws
@@ -35,58 +34,12 @@ provider:
     # Enable API Gateway logs
     restApi: true
 
-  # iam:
-  #   role:
-  #     statements:
-  #       - Effect: Allow
-  #         Action:
-  #           - xray:PutTelemetryRecords
-  #           - xray:PutTraceSegments
-  #         Resource: "*"
-
-custom:
-    documentation:
-    api:
-      info:
-        version: v1.0.0
-        title: serverless-todo-app
-        description: serverless-todo-app
-    models:
-      - name: CreateTodoRequest
-        contentType: application/json
-        schema: ${file(models/create-todo-model.json)}
-        # schemas:
-        #   required:
-        #     - name
-        #     - dueDate
-        #   properties:
-        #     name:
-        #       type: string
-        #     dueDate:
-        #       type: string
-      - name: UpdateTodoRequest
-        contentType: application/json
-        schema: ${file(models/update-todo-model.json)}
-        # schemas:
-        #   required:
-        #     - name
-        #     - dueDate
-        #     - done
-        #   properties:
-        #     name:
-        #       type: string
-        #     dueDate:
-        #       type: string
-        #     done:
-        #       type: boolean
 
 functions:
 
   Auth:
     handler: src/lambda/auth/auth0Authorizer.handler
 
-  # TODO: Configure this function - 
-  # Provide iamRoleStatements property for performing Actions on DynamoDB
   GetTodos:
     handler: src/lambda/http/getTodos.handler
     events:
@@ -110,12 +63,19 @@ functions:
           path: todos
           cors: true
           authorizer: Auth
-          reqValidatorName: RequestBodyValidator
-          documentation:
-            summary: Create a new todo item
-            description: Create a new todo item
-            requestModels:
-              'application/json': CreateTodoRequest
+          request:
+            schemas:
+              application/json: ${file(models/create-todo-model.json)}
+
+          # request:
+          #   schemas:
+          #     application/json: ${file(models/create-todo-model.json)}
+          # reqValidatorName: RequestBodyValidator
+          # documentation:
+          #   summary: Create a new todo item
+          #   description: Create a new todo item
+          #   requestModels:
+          #     'application/json': CreateTodoRequest
           
 
     iamRoleStatementsName: project4-create-todo-role-${self:provider.stage}
@@ -135,12 +95,15 @@ functions:
           path: todos/{todoId}
           cors: true
           authorizer: Auth
-          reqValidatorName: RequestBodyValidator
-          documentation:
-            summary: "Update a todo item"
-            description: "Update a todo item"
-            requestModels:
-              "application/json": UpdateTodoRequest
+          request:
+            schemas:
+              application/json: ${file(models/update-todo-model.json)}
+          # reqValidatorName: RequestBodyValidator
+          # documentation:
+          #   summary: "Update a todo item"
+          #   description: "Update a todo item"
+          #   requestModels:
+          #     "application/json": UpdateTodoRequest
           
     iamRoleStatementsName: project4-update-todo-role-${self:provider.stage}
     iamRoleStatements:
@@ -166,8 +129,6 @@ functions:
           - dynamodb:DeleteItem
         Resource: arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.TODOS_TABLE}          
 
-  # TODO: Configure this function
-  # Provide property for setting up CORS, Authorizer, iamRoleStatements
   GenerateUploadUrl:
     handler: src/lambda/http/generateUploadUrl.handler
     events:
@@ -186,14 +147,6 @@ functions:
 resources:
   Resources:
     
-    RequestBodyValidator:
-      Type: AWS::ApiGateway::RequestValidator
-      Properties:
-        Name: 'request-body-validator'
-        RestApiId:
-          Ref: ApiGatewayRestApi
-        ValidateRequestBody: true
-        ValidateRequestParameters: false
     TodosDynamoDBTable:
       Type: AWS::DynamoDB::Table
       Properties:
