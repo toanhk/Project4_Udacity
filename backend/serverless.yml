@@ -1,13 +1,14 @@
 # TODO: Change the name of the org 
 # org: toanhk
 # app: serverless-todo-app
-service: 
-  name: serverless-todo-app
+service: serverless-todo-app
 
 plugins:
   - serverless-webpack
   - serverless-iam-roles-per-function
   - serverless-plugin-tracing
+  - serverless-reqvalidator-plugin
+  - serverless-aws-documentation
 
 provider:
   name: aws
@@ -42,7 +43,43 @@ provider:
   #           - xray:PutTelemetryRecords
   #           - xray:PutTraceSegments
   #         Resource: "*"
- 
+
+custom:
+    documentation:
+    api:
+      info:
+        version: v1.0.0
+        title: serverless-todo-app
+        description: serverless-todo-app
+    models:
+      - name: CreateTodoRequest
+        contentType: application/json
+        schema: ${file(models/create-todo-model.json)}
+        # schemas:
+        #   required:
+        #     - name
+        #     - dueDate
+        #   properties:
+        #     name:
+        #       type: string
+        #     dueDate:
+        #       type: string
+      - name: UpdateTodoRequest
+        contentType: application/json
+        schema: ${file(models/update-todo-model.json)}
+        # schemas:
+        #   required:
+        #     - name
+        #     - dueDate
+        #     - done
+        #   properties:
+        #     name:
+        #       type: string
+        #     dueDate:
+        #       type: string
+        #     done:
+        #       type: boolean
+
 functions:
 
   Auth:
@@ -73,12 +110,13 @@ functions:
           path: todos
           cors: true
           authorizer: Auth
+          reqValidatorName: RequestBodyValidator
           documentation:
-            summary: "Create a new todo item"
-            description: "Create a new todo item"
+            summary: Create a new todo item
+            description: Create a new todo item
             requestModels:
-              "application/json": CreateTodoRequest
-          reqValidatorName: onlyBody
+              'application/json': CreateTodoRequest
+          
 
     iamRoleStatementsName: project4-create-todo-role-${self:provider.stage}
     iamRoleStatements:
@@ -97,12 +135,13 @@ functions:
           path: todos/{todoId}
           cors: true
           authorizer: Auth
+          reqValidatorName: RequestBodyValidator
           documentation:
             summary: "Update a todo item"
             description: "Update a todo item"
             requestModels:
               "application/json": UpdateTodoRequest
-          reqValidatorName: onlyBody
+          
     iamRoleStatementsName: project4-update-todo-role-${self:provider.stage}
     iamRoleStatements:
       - Effect: Allow
@@ -146,14 +185,15 @@ functions:
 
 resources:
   Resources:
-    # Add necessary AWS resources. You will need at least the following AWS resources
-    # TODO: Fill the properties
-    # Feel free to change the names as you like. 
-    # GatewayResponseDefault4XX:
-    #   Type: AWS::ApiGateway::GatewayResponse
-    #   Properties:
     
-    # TODO: Create a DynamoDB table with local secondary index and a composite key
+    RequestBodyValidator:
+      Type: AWS::ApiGateway::RequestValidator
+      Properties:
+        Name: 'request-body-validator'
+        RestApiId:
+          Ref: ApiGatewayRestApi
+        ValidateRequestBody: true
+        ValidateRequestParameters: false
     TodosDynamoDBTable:
       Type: AWS::DynamoDB::Table
       Properties:

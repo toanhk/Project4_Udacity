@@ -6,10 +6,14 @@ import { cors } from 'middy/middlewares'
 
 import { getAllTodoItems } from '../../businessLogic/todos'
 import { getUserId } from '../utils'
+import { createLogger } from '../../utils/logger'
+
+const logger = createLogger('getTodos.ts')
 
 export const handler = middy(
   async (event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> => {
-    console.log('Processing event: ' + event)
+    logger.info('Processing event', event)
+
     const userId = getUserId(event);
     const items = await getAllTodoItems(userId);
 

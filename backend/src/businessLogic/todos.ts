@@ -7,9 +7,12 @@ import { CreateTodoRequest } from '../requests/CreateTodoRequest'
 import { UpdateTodoRequest } from '../requests/UpdateTodoRequest';
 import { TodoUpdate } from '../models/TodoUpdate';
 import { TodoDelete } from '../models/TodoDelete';
+import { createLogger } from '../utils/logger'
 
 const bucketName = process.env.ATTACHMENT_S3_BUCKET
 const urlExpiration = process.env.SIGNED_URL_EXPIRATION
+
+const logger = createLogger('Todos.ts')
 
 const todoAccess = new TodoAccess()
 
@@ -18,6 +21,7 @@ const s3 = new AWS.S3({
 })
 
 export async function getAllTodoItems(userId: string): Promise<TodoItem[]> {
+  logger.info('GetAllTodoItems.')
   return await todoAccess.getAllTodoItems(userId)
 }
 
@@ -25,6 +29,8 @@ export async function createTodo(
   createTodoRequest: CreateTodoRequest,
   userId: string
 ): Promise<TodoItem> {
+
+  logger.info('Create function.')
 
   const todoId = uuid.v4()
 
@@ -45,6 +51,8 @@ export async function updateTodoItem(
   userId: string
 ): Promise<TodoUpdate> {
 
+  logger.info('In function: updateTodoItem()')
+
   return await todoAccess.updateTodoItem({
     todoId: todoId,
     userId: userId,
@@ -59,6 +67,7 @@ export async function deleteTodoItem(
   todoId: string
 ): Promise<TodoDelete> {
 
+  logger.info('Hello! from deleteTodoItem function')
   return await todoAccess.deleteTodo({
     userId: userId,
     todoId: todoId
@@ -67,6 +76,7 @@ export async function deleteTodoItem(
 
 export async function getUploadUrl(todoId: string) {
 
+  logger.info('Function getUploadUrl', todoId)
   return s3.getSignedUrl('putObject', {
     Bucket: bucketName,
     Key: todoId,

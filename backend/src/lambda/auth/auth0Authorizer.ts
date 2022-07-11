@@ -5,9 +5,10 @@ import { verify, decode } from 'jsonwebtoken'
 import Axios from 'axios'
 import { Jwt } from '../../auth/Jwt'
 import { JwtPayload } from '../../auth/JwtPayload'
+import { createLogger } from '../../utils/logger'
 const jwkToPem = require('jwk-to-pem')
 
-
+const logger = createLogger('auth')
 // const auth0Secret = process.env.AUTH_0_SECRET
 // TODO: Provide a URL that can be used to download a certificate that can be used -> done
 // to verify JWT token signature.
@@ -16,8 +17,10 @@ const jwksUrl = 'https://toanhk.us.auth0.com/.well-known/jwks.json'
 export const handler = async (
   event: CustomAuthorizerEvent
 ): Promise<CustomAuthorizerResult> => {
+  logger.info('Authorizing a user', event.authorizationToken)
   try {
     const jwtToken = await verifyToken(event.authorizationToken)
+    logger.info('User was authorized', jwtToken)
 
     return {
       principalId: jwtToken.sub,
@@ -33,7 +36,8 @@ export const handler = async (
       }
     }
   } catch (e) {
-
+    logger.error('User not authorized', { error: e.message })
+    
     return {
       principalId: 'user',
       policyDocument: {
@@ -56,7 +60,7 @@ async function verifyToken(authHeader: string): Promise<JwtPayload> {
   const result = await Axios(jwksUrl)
   const resultData = result.data
   const signingKey = resultData['keys'].find(
-    key => key['kid'] === jwt['header'] ['kid']
+    key => key['kid'] === jwt['header']['kid']
   )
   // TODO: Implement token verification
   // You should implement it similarly to how it was implemented for the exercise for the lesson 5
