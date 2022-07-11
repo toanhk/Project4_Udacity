@@ -6,8 +6,6 @@ service: serverless-todo-app
 plugins:
   - serverless-webpack
   - serverless-iam-roles-per-function
-  - serverless-plugin-tracing
-  - serverless-reqvalidator-plugin
 
 provider:
   name: aws
@@ -33,7 +31,20 @@ provider:
   logs:
     # Enable API Gateway logs
     restApi: true
-
+# custom:
+#   documentation:
+#     api:
+#       info:
+#         version: v1.0.0
+#         title: serverless-todo-app
+#         description: serverless-todo-app
+#     models:
+#       - name: CreateTodoRequest
+#         contentType: application/json
+#         schema: ${file(models/create-todo-model.json)}
+#       - name: UpdateTodoRequest
+#         contentType: application/json
+#         schema: ${file(models/update-todo-model.json)}
 
 functions:
 
@@ -63,13 +74,16 @@ functions:
           path: todos
           cors: true
           authorizer: Auth
+          # reqValidatorName: RequestBodyValidator
+          # documentation:
+          #   summary: Create a new group
+          #   description: Create a new group
+          #   requestModels:
+          #     'application/json': CreateTodoRequest
+
           request:
             schemas:
               application/json: ${file(models/create-todo-model.json)}
-
-          # request:
-          #   schemas:
-          #     application/json: ${file(models/create-todo-model.json)}
           # reqValidatorName: RequestBodyValidator
           # documentation:
           #   summary: Create a new todo item
@@ -146,7 +160,27 @@ functions:
 
 resources:
   Resources:
-    
+    GatewayResponseDefault4XX:
+      Type: AWS::ApiGateway::GatewayResponse
+      Properties:
+        ResponseParameters:
+          gatewayresponse.header.Access-Control-Allow-Origin: "'*'"
+          gatewayresponse.header.Access-Control-Allow-Credentials: "'true'"
+          gatewayresponse.header.Access-Control-Allow-Headers: "'*'"
+          gatewayresponse.header.Access-Control-Allow-Methods: "'*'"
+        ResponseType: DEFAULT_4XX
+        RestApiId:
+          Ref: ApiGatewayRestApi
+
+    # RequestBodyValidator:
+    #   Type: AWS::ApiGateway::RequestValidator
+    #   Properties:
+    #     Name: 'request-body-validator'
+    #     RestApiId:
+    #       Ref: ApiGatewayRestApi
+    #     ValidateRequestBody: true
+    #     ValidateRequestParameters: false
+
     TodosDynamoDBTable:
       Type: AWS::DynamoDB::Table
       Properties:
